@@ -1,0 +1,87 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+library SafeMath {
+    function safeAdd(uint a, uint b) public pure returns (uint c) {
+        c = a+b;
+        require(c>=a);
+    }
+
+    function safeSub(uint a,uint b) public pure returns (uint c){
+        require(b<=a);
+        c = a-b;
+    }
+
+    function safeMul(uint a,uint b) public pure returns (uint c){
+            c= a*b;
+            require(a==0 || c/a ==b);
+      }
+
+    function safeDiv(uint a, uint b) public pure returns (uint c){
+        require(b>0);
+        c=a/b;
+        
+    }     
+        
+    
+}
+contract Auction {
+    
+    struct AuctionDetails {
+        uint bidAmount;
+        address bidder;
+        bool isAccepted;
+    }
+    mapping (address => AuctionDetails[]) public bids;
+   
+    mapping (address => uint) public auctionEndTime;
+    mapping (address => bool) public isAuctionActive;
+
+    event BidPlaced(address auctionAddress, uint bidAmount, address bidder);
+    event BidAccepted(address auctionAddress, uint bidAmount, address bidder);
+    event AuctionEnded(address auctionAddress);
+
+  
+    function placeBid(address auctionAddress, uint bidAmount) public {
+       
+        require(isAuctionActive[auctionAddress], "Auction has ended.");
+       
+        require(block.timestamp < auctionEndTime[auctionAddress], "Auction has ended.");
+       
+        bids[auctionAddress].push(AuctionDetails({
+            bidAmount: bidAmount,
+            bidder: msg.sender,
+            isAccepted: false
+        }));
+        emit BidPlaced(auctionAddress, bidAmount, msg.sender);
+    }
+
+  
+    function viewBids(address auctionAddress) public view returns (AuctionDetails[] memory) {
+        return bids[auctionAddress];
+    }
+
+    
+    function acceptBid(address auctionAddress, uint bidIndex) public {
+       
+        require(msg.sender == auctionAddress, "Only the auction owner can accept a bid.");
+     
+        require(isAuctionActive[auctionAddress], "Auction has ended.");
+       
+        require(bidIndex < bids[auctionAddress].length, "Invalid bid index.");
+       
+        bids[auctionAddress][bidIndex].isAccepted = true;
+        emit BidAccepted(auctionAddress, bids[auctionAddress][bidIndex].bidAmount, bids[auctionAddress][bidIndex].bidder);
+    }
+
+  
+    function endAuction(address auctionAddress) public {
+      
+        require(msg.sender == auctionAddress, "Only the auction owner can end the auction.");
+       
+        isAuctionActive[auctionAddress] = false;
+        emit AuctionEnded(auctionAddress);
+    }
+
+        
+        }
